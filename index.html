@@ -10,6 +10,7 @@
             --primary: #6366f1;
             --success: #22c55e;
             --warning: #f59e0b;
+            --danger: #ef4444;
             --bg: #0f172a;
             --card-bg: #1e293b;
             --text: #f8fafc;
@@ -113,128 +114,156 @@
             padding: 40px;
             color: var(--text-secondary);
         }
-        .error {
-            background: #7f1d1d;
-            border-radius: 12px;
-            padding: 16px;
-            color: #f87171;
-            text-align: center;
-        }
-        .api-note {
-            text-align: center;
-            padding: 12px;
-            color: var(--text-secondary);
+        
+        .model-tag {
+            display: inline-block;
+            background: var(--primary);
+            padding: 2px 8px;
+            border-radius: 4px;
             font-size: 12px;
+            margin-top: 8px;
         }
+        
+        .usage-bar {
+            background: #334155;
+            border-radius: 8px;
+            height: 8px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .usage-bar-fill {
+            height: 100%;
+            border-radius: 8px;
+            transition: width 0.3s;
+        }
+        .usage-bar-fill.low { background: var(--success); }
+        .usage-bar-fill.medium { background: var(--warning); }
+        .usage-bar-fill.high { background: var(--danger); }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>📊 用量监控</h1>
         
-        <div id="minimaxCard" class="card">
+        <!-- OpenClaw 当前会话 -->
+        <div class="card">
             <div class="card-header">
-                <span class="card-title">MiniMax</span>
-                <span class="provider-badge">MiniMax</span>
+                <span class="card-title">🤖 OpenClaw 当前会话</span>
+                <span class="provider-badge">OpenClaw</span>
             </div>
-            <div id="minimaxContent">
+            <div id="openclawContent">
                 <div class="loading">加载中...</div>
             </div>
         </div>
         
+        <!-- 下次刷新 -->
         <div class="refresh-bar">
             <span class="refresh-icon">🔄</span>
             <div class="refresh-info">
-                <div class="refresh-label">下次刷新</div>
-                <div class="refresh-time" id="nextRefresh">--</div>
+                <div class="refresh-label">数据更新时间</div>
+                <div class="refresh-time" id="updateTime">--</div>
             </div>
             <div class="countdown" id="countdown">60s</div>
         </div>
         
-        <div class="api-note">
-            API Key 自动获取自本地配置
+        <div style="text-align:center;padding:16px;color:var(--text-secondary);font-size:12px">
+            数据来自当前 OpenClaw 会话<br>
+            刷新页面获取最新数据
         </div>
     </div>
 
     <script>
-        const REFRESH_INTERVAL = 60; // 秒
-        
+        const REFRESH_INTERVAL = 60;
         let remainingSeconds = REFRESH_INTERVAL;
         let countdownTimer;
         
-        // 从本地获取 API Key（需要后端代理或扩展支持）
-        async function fetchUsage() {
+        // 获取当前会话用量
+        async function fetchOpenClawUsage() {
+            // 通过 API 获取 session 状态
             try {
-                // 由于浏览器 CORS 限制，需要通过后端代理
-                // 这里先显示模拟数据，实际需要后端支持
-                const response = await fetch('/api/usage');
-                const data = await response.json();
-                renderUsage(data);
+                // 尝试从 localStorage 获取（如果页面嵌入在 OpenClaw 中）
+                const stored = localStorage.getItem('openclaw_usage');
+                if (stored) {
+                    const data = JSON.parse(stored);
+                    renderOpenClawUsage(data);
+                } else {
+                    renderManualRefresh();
+                }
             } catch (e) {
-                // 如果 API 不可用，显示说明
-                showApiNote();
+                renderManualRefresh();
             }
         }
         
-        function showApiNote() {
-            document.getElementById('minimaxContent').innerHTML = `
-                <div class="error">
-                    需要配置后端服务来获取用量数据<br><br>
-                    <small>API 请求需要后端代理，请部署后端服务</small>
+        function renderManualRefresh() {
+            document.getElementById('openclawContent').innerHTML = `
+                <div style="text-align:center;padding:20px;color:var(--text-secondary)">
+                    <p style="margin-bottom:12px">请在 OpenClaw 中发送"状态"获取数据</p>
+                    <p style="font-size:12px">或刷新页面更新</p>
                 </div>
             `;
         }
         
-        function renderUsage(data) {
+        function renderOpenClawUsage(data) {
+            const contextPercent = data.contextPercent || 0;
+            const contextClass = contextPercent > 80 ? 'high' : contextPercent > 50 ? 'medium' : 'low';
+            const contextClassColor = contextPercent > 80 ? 'var(--danger)' : contextPercent > 50 ? 'var(--warning)' : 'var(--success)';
+            
             const html = `
                 <div class="stat-row">
-                    <span class="stat-label">已用 Token</span>
-                    <span class="stat-value">${formatNumber(data.used)}</span>
+                    <span class="stat-label">模型</span>
+                    <span class="stat-value" style="font-size:14px">${data.model || 'MiniMax-M2.7'}</span>
                 </div>
                 <div class="stat-row">
-                    <span class="stat-label">剩余额度</span>
-                    <span class="stat-value ${getQuotaClass(data.remaining, data.total)}">${formatNumber(data.remaining)}</span>
+                    <span class="stat-label">输入 Token</span>
+                    <span class="stat-value">${formatNumber(data.inputTokens)}</span>
                 </div>
                 <div class="stat-row">
-                    <span class="stat-label">总额度</span>
-                    <span class="stat-value">${formatNumber(data.total)}</span>
+                    <span class="stat-label">输出 Token</span>
+                    <span class="stat-value">${formatNumber(data.outputTokens)}</span>
                 </div>
                 <div class="stat-row">
-                    <span class="stat-label">使用占比</span>
-                    <span class="stat-value">${data.percent}%</span>
+                    <span class="stat-label">上下文使用</span>
+                    <span class="stat-value" style="color:${contextClassColor}">${contextPercent}%</span>
+                </div>
+                <div class="usage-bar">
+                    <div class="usage-bar-fill ${contextClass}" style="width:${contextPercent}%;background:${contextClassColor}"></div>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">缓存命中率</span>
+                    <span class="stat-value">${data.cacheHit || '0%'}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">会话时长</span>
+                    <span class="stat-value">${data.sessionAge || '--'}</span>
                 </div>
             `;
-            document.getElementById('minimaxContent').innerHTML = html;
+            document.getElementById('openclawContent').innerHTML = html;
         }
         
         function formatNumber(num) {
+            if (!num) return '0';
+            num = parseInt(num);
             if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
             if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-            return num?.toString() || '0';
-        }
-        
-        function getQuotaClass(remaining, total) {
-            const percent = (remaining / total) * 100;
-            if (percent < 10) return 'danger';
-            if (percent < 30) return 'warning';
-            return 'success';
+            return num.toString();
         }
         
         function updateCountdown() {
             remainingSeconds--;
             document.getElementById('countdown').textContent = remainingSeconds + 's';
-            document.getElementById('nextRefresh').textContent = new Date(Date.now() + remainingSeconds * 1000).toLocaleTimeString();
+            document.getElementById('updateTime').textContent = new Date().toLocaleTimeString();
             
             if (remainingSeconds <= 0) {
                 remainingSeconds = REFRESH_INTERVAL;
-                fetchUsage();
+                location.reload();
             }
         }
         
         // 初始化
         function init() {
-            fetchUsage();
+            fetchOpenClawUsage();
             countdownTimer = setInterval(updateCountdown, 1000);
+            document.getElementById('updateTime').textContent = new Date().toLocaleTimeString();
         }
         
         init();
