@@ -64,11 +64,23 @@
         .badge-minimax {
             background: linear-gradient(135deg, #22c55e, #16a34a);
         }
+        .section {
+            margin-bottom: 20px;
+        }
+        .section:last-child { margin-bottom: 0; }
+        .section-title {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
         .stat-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 0;
+            padding: 10px 0;
             border-bottom: 1px solid #334155;
         }
         .stat-row:last-child { border-bottom: none; }
@@ -83,6 +95,47 @@
         .stat-value.success { color: var(--success); }
         .stat-value.warning { color: var(--warning); }
         .stat-value.danger { color: #ef4444; }
+        
+        .usage-bar {
+            background: #334155;
+            border-radius: 8px;
+            height: 8px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .usage-bar-fill {
+            height: 100%;
+            border-radius: 8px;
+            transition: width 0.3s;
+        }
+        .usage-bar-fill.low { background: var(--success); }
+        .usage-bar-fill.medium { background: var(--warning); }
+        .usage-bar-fill.high { background: var(--danger); }
+        
+        .model-selector {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .model-btn {
+            padding: 4px 12px;
+            border-radius: 16px;
+            border: 1px solid #334155;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .model-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        .model-btn:hover {
+            border-color: var(--primary);
+        }
         
         .refresh-bar {
             background: var(--card-bg);
@@ -118,31 +171,6 @@
             color: var(--text-secondary);
         }
         
-        .model-tag {
-            display: inline-block;
-            background: var(--primary);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            margin-top: 8px;
-        }
-        
-        .usage-bar {
-            background: #334155;
-            border-radius: 8px;
-            height: 8px;
-            margin-top: 8px;
-            overflow: hidden;
-        }
-        .usage-bar-fill {
-            height: 100%;
-            border-radius: 8px;
-            transition: width 0.3s;
-        }
-        .usage-bar-fill.low { background: var(--success); }
-        .usage-bar-fill.medium { background: var(--warning); }
-        .usage-bar-fill.high { background: var(--danger); }
-        
         .error {
             background: #7f1d1d;
             border-radius: 12px;
@@ -158,29 +186,11 @@
             font-size: 12px;
         }
         
-        .model-selector {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
+        .model-current {
+            font-size: 14px;
+            color: var(--primary);
             margin-bottom: 12px;
-        }
-        .model-btn {
-            padding: 4px 12px;
-            border-radius: 16px;
-            border: 1px solid #334155;
-            background: transparent;
-            color: var(--text-secondary);
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .model-btn.active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
-        .model-btn:hover {
-            border-color: var(--primary);
+            font-weight: 600;
         }
     </style>
 </head>
@@ -195,6 +205,7 @@
                 <span class="provider-badge badge-minimax">MiniMax</span>
             </div>
             
+            <div class="model-current" id="modelCurrent">MiniMax-M2.7</div>
             <div class="model-selector" id="modelSelector"></div>
             
             <div id="minimaxContent">
@@ -224,7 +235,6 @@
         let allModels = [];
         let selectedModel = 'MiniMax-M2.7';
         
-        // 从 Vercel API 获取 MiniMax 用量
         async function fetchMiniMaxUsage() {
             try {
                 const response = await fetch('/api/usage');
@@ -238,7 +248,9 @@
                 renderModelSelector();
                 renderSelectedModel();
             } catch (e) {
-                renderError(e.message);
+                document.getElementById('minimaxContent').innerHTML = `
+                    <div class="error">获取失败: ${e.message}</div>
+                `;
             }
         }
         
@@ -260,73 +272,86 @@
         
         function renderSelectedModel() {
             const model = allModels.find(m => m.model_name === selectedModel);
+            document.getElementById('modelCurrent').textContent = selectedModel;
+            
             if (!model) {
                 document.getElementById('minimaxContent').innerHTML = '<div class="loading">选择模型...</div>';
                 return;
             }
             
-            const total = model.current_weekly_total_count || 0;
-            const used = model.current_weekly_usage_count || 0;
-            const remains = total - used;
-            const percent = total > 0 ? ((used / total) * 100).toFixed(1) : 0;
-            const percentClass = percent > 80 ? 'high' : percent > 50 ? 'medium' : 'low';
-            const percentColor = percent > 80 ? 'var(--danger)' : percent > 50 ? 'var(--warning)' : 'var(--success)';
+            // 本周数据
+            const weeklyTotal = model.current_weekly_total_count || 0;
+            const weeklyUsed = model.current_weekly_usage_count || 0;
+            const weeklyRemains = weeklyTotal - weeklyUsed;
+            const weeklyPercent = weeklyTotal > 0 ? ((weeklyUsed / weeklyTotal) * 100).toFixed(1) : 0;
             
-            // 转换剩余时间为可读格式
-            const remainsTime = formatTime(model.weekly_remains_time || 0);
+            // 当前周期数据
+            const intervalTotal = model.current_interval_total_count || 0;
+            const intervalUsed = model.current_interval_usage_count || 0;
+            const intervalRemains = intervalTotal - intervalUsed;
+            const intervalPercent = intervalTotal > 0 ? ((intervalUsed / intervalTotal) * 100).toFixed(1) : 0;
+            
+            // 当前周期剩余时间
+            const intervalRemainTime = formatTime(model.remains_time || 0);
+            
+            // 进度条颜色
+            const weeklyColor = weeklyPercent > 80 ? 'var(--danger)' : weeklyPercent > 50 ? 'var(--warning)' : 'var(--success)';
+            const intervalColor = intervalPercent > 80 ? 'var(--danger)' : intervalPercent > 50 ? 'var(--warning)' : 'var(--success)';
             
             const html = `
-                <div class="stat-row">
-                    <span class="stat-label">本周已用</span>
-                    <span class="stat-value">${formatNumber(used)}</span>
+                <div class="section">
+                    <div class="section-title">📅 本周用量</div>
+                    <div class="stat-row">
+                        <span class="stat-label">已用</span>
+                        <span class="stat-value">${weeklyUsed}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">剩余</span>
+                        <span class="stat-value" style="color:${weeklyColor}">${weeklyRemains}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">总额</span>
+                        <span class="stat-value">${weeklyTotal}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">使用</span>
+                        <span class="stat-value" style="color:${weeklyColor}">${weeklyPercent}%</span>
+                    </div>
+                    <div class="usage-bar">
+                        <div class="usage-bar-fill ${weeklyPercent > 80 ? 'high' : weeklyPercent > 50 ? 'medium' : 'low'}" 
+                             style="width:${weeklyPercent}%;background:${weeklyColor}"></div>
+                    </div>
                 </div>
-                <div class="stat-row">
-                    <span class="stat-label">本周剩余</span>
-                    <span class="stat-value ${percentClass === 'high' ? 'danger' : percentClass === 'medium' ? 'warning' : 'success'}">${formatNumber(remains)}</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">本周总额</span>
-                    <span class="stat-value">${formatNumber(total)}</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">使用占比</span>
-                    <span class="stat-value" style="color:${percentColor}">${percent}%</span>
-                </div>
-                <div class="usage-bar">
-                    <div class="usage-bar-fill ${percentClass}" style="width:${percent}%;background:${percentColor}"></div>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">剩余时间</span>
-                    <span class="stat-value">${remainsTime}</span>
+                
+                <div class="section">
+                    <div class="section-title">⏱️ 当前周期（剩余 ${intervalRemainTime}）</div>
+                    <div class="stat-row">
+                        <span class="stat-label">已用</span>
+                        <span class="stat-value">${intervalUsed}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">剩余</span>
+                        <span class="stat-value" style="color:${intervalColor}">${intervalRemains}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">总额</span>
+                        <span class="stat-value">${intervalTotal}</span>
+                    </div>
+                    <div class="usage-bar">
+                        <div class="usage-bar-fill ${intervalPercent > 80 ? 'high' : intervalPercent > 50 ? 'medium' : 'low'}" 
+                             style="width:${intervalPercent}%;background:${intervalColor}"></div>
+                    </div>
                 </div>
             `;
             document.getElementById('minimaxContent').innerHTML = html;
         }
         
-        function renderError(msg) {
-            document.getElementById('minimaxContent').innerHTML = `
-                <div class="error">
-                    获取失败: ${msg}
-                </div>
-            `;
-        }
-        
-        function formatNumber(num) {
-            if (!num && num !== 0) return '0';
-            num = parseFloat(num);
-            if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
-            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-            return num.toString();
-        }
-        
         function formatTime(ms) {
             if (!ms || ms <= 0) return '已用完';
-            
             const seconds = Math.floor(ms / 1000);
             const minutes = Math.floor(seconds / 60);
             const hours = Math.floor(minutes / 60);
             const days = Math.floor(hours / 24);
-            
             if (days > 0) return `${days}天${hours % 24}小时`;
             if (hours > 0) return `${hours}小时${minutes % 60}分`;
             if (minutes > 0) return `${minutes}分${seconds % 60}秒`;
@@ -337,14 +362,12 @@
             remainingSeconds--;
             document.getElementById('countdown').textContent = remainingSeconds + 's';
             document.getElementById('nextRefresh').textContent = new Date(Date.now() + remainingSeconds * 1000).toLocaleTimeString();
-            
             if (remainingSeconds <= 0) {
                 remainingSeconds = REFRESH_INTERVAL;
                 fetchMiniMaxUsage();
             }
         }
         
-        // 初始化
         function init() {
             fetchMiniMaxUsage();
             countdownTimer = setInterval(updateCountdown, 1000);
