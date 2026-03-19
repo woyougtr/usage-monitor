@@ -7,41 +7,49 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
-            --primary: #6366f1;
+            --primary: #10b981;
+            --primary-light: #34d399;
             --success: #22c55e;
             --warning: #f59e0b;
             --danger: #ef4444;
-            --bg: #0f172a;
-            --card-bg: #1e293b;
-            --text: #f8fafc;
-            --text-secondary: #94a3b8;
+            --bg: #f0fdf4;
+            --card-bg: #ffffff;
+            --text: #1f2937;
+            --text-secondary: #6b7280;
+            --border: #e5e7eb;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             min-height: 100vh;
             background: var(--bg);
             background-image: 
-                radial-gradient(ellipse at top, #1e1b4b 0%, transparent 50%),
-                radial-gradient(ellipse at bottom right, #312e81 0%, transparent 50%);
+                radial-gradient(circle at 20% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(59, 130, 246, 0.08) 0%, transparent 50%);
             color: var(--text);
             padding: 20px;
         }
-        .container { max-width: 500px; margin: 0 auto; }
+        .container { max-width: 420px; margin: 0 auto; }
         h1 { 
             text-align: center; 
             margin-bottom: 24px; 
-            font-size: 24px;
-            background: linear-gradient(135deg, #a78bfa, #f472b6);
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.5px;
+        }
+        h1 span {
+            background: linear-gradient(135deg, #10b981, #3b82f6);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
         .card {
             background: var(--card-bg);
-            border-radius: 16px;
+            border-radius: 20px;
             padding: 20px;
             margin-bottom: 16px;
-            border: 1px solid #334155;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         }
         .card-header {
             display: flex;
@@ -50,94 +58,108 @@
             margin-bottom: 16px;
         }
         .card-title {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
             color: var(--text);
         }
         .provider-badge {
-            background: linear-gradient(135deg, var(--primary), #a855f7);
+            background: linear-gradient(135deg, #10b981, #059669);
             padding: 4px 12px;
             border-radius: 20px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
-        }
-        .badge-minimax {
-            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
         }
         .section {
             margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px dashed #f3f4f6;
         }
-        .section:last-child { margin-bottom: 0; }
+        .section:last-child { 
+            margin-bottom: 0; 
+            padding-bottom: 0;
+            border-bottom: none;
+        }
         .section-title {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-secondary);
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
             gap: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .stat-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid #334155;
+            padding: 8px 0;
         }
-        .stat-row:last-child { border-bottom: none; }
         .stat-label {
             color: var(--text-secondary);
             font-size: 14px;
         }
         .stat-value {
-            font-size: 18px;
-            font-weight: 700;
+            font-size: 16px;
+            font-weight: 600;
         }
         .stat-value.success { color: var(--success); }
         .stat-value.warning { color: var(--warning); }
         .stat-value.danger { color: #ef4444; }
+        .stat-value.primary { color: var(--primary); }
         
         .usage-bar {
-            background: #334155;
-            border-radius: 8px;
+            background: #f3f4f6;
+            border-radius: 10px;
             height: 8px;
-            margin-top: 8px;
+            margin-top: 10px;
             overflow: hidden;
         }
         .usage-bar-fill {
             height: 100%;
-            border-radius: 8px;
-            transition: width 0.3s;
+            border-radius: 10px;
+            transition: width 0.4s ease;
         }
-        .usage-bar-fill.low { background: var(--success); }
-        .usage-bar-fill.medium { background: var(--warning); }
-        .usage-bar-fill.high { background: var(--danger); }
+        .usage-bar-fill.low { background: linear-gradient(90deg, #34d399, #10b981); }
+        .usage-bar-fill.medium { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+        .usage-bar-fill.high { background: linear-gradient(90deg, #f87171, #ef4444); }
         
         .refresh-bar {
             background: var(--card-bg);
-            border-radius: 12px;
-            padding: 16px;
+            border-radius: 16px;
+            padding: 16px 20px;
             display: flex;
             align-items: center;
             gap: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         }
         .refresh-icon {
-            font-size: 24px;
+            font-size: 20px;
+            opacity: 0.6;
         }
         .refresh-info {
             flex: 1;
         }
         .refresh-label {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .refresh-time {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
+            color: var(--text);
         }
         .countdown {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 700;
             color: var(--primary);
+            background: rgba(16, 185, 129, 0.1);
+            padding: 8px 16px;
+            border-radius: 12px;
         }
         
         .loading {
@@ -147,23 +169,24 @@
         }
         
         .error {
-            background: #7f1d1d;
+            background: #fef2f2;
             border-radius: 12px;
             padding: 16px;
-            color: #f87171;
+            color: #ef4444;
             text-align: center;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📊 用量监控</h1>
+        <h1>📊 <span>用量监控</span></h1>
         
         <!-- MiniMax 用量 -->
         <div class="card">
             <div class="card-header">
                 <span class="card-title">🤖 MiniMax</span>
-                <span class="provider-badge badge-minimax">MiniMax</span>
+                <span class="provider-badge">MiniMax</span>
             </div>
             
             <div id="minimaxContent">
@@ -199,7 +222,6 @@
                 }
                 
                 allModels = data.model_remains || [];
-                // 默认选 M2.7
                 if (!allModels.find(m => m.model_name === selectedModel)) {
                     selectedModel = allModels[0]?.model_name || '';
                 }
@@ -221,29 +243,29 @@
             
             // 当前周期数据
             const intervalTotal = model.current_interval_total_count || 0;
-            const intervalRemaining = model.current_interval_usage_count || 0; // API返回的是剩余次数
+            const intervalRemaining = model.current_interval_usage_count || 0;
             const intervalUsed = intervalTotal - intervalRemaining;
             const intervalPercent = intervalTotal > 0 ? ((intervalUsed / intervalTotal) * 100).toFixed(1) : 0;
             
             // 本周数据
             const weeklyTotal = model.current_weekly_total_count || 0;
-            const weeklyRemaining = model.current_weekly_usage_count || 0; // API返回的是剩余额度
+            const weeklyRemaining = model.current_weekly_usage_count || 0;
             const weeklyUsed = weeklyTotal - weeklyRemaining;
             const weeklyPercent = weeklyTotal > 0 ? ((weeklyUsed / weeklyTotal) * 100).toFixed(1) : 0;
             
             // 当前周期剩余时间
             const intervalRemainTime = formatTime(model.remains_time || 0);
             
-            // 进度条颜色 - 剩余越少越危险
-            const weeklyColor = weeklyPercent > 80 ? 'var(--danger)' : weeklyPercent > 50 ? 'var(--warning)' : 'var(--success)';
-            const intervalColor = intervalPercent > 80 ? 'var(--danger)' : intervalPercent > 50 ? 'var(--warning)' : 'var(--success)';
+            // 颜色
+            const intervalColor = intervalPercent > 80 ? 'danger' : intervalPercent > 50 ? 'warning' : 'success';
+            const weeklyColor = weeklyPercent > 80 ? 'danger' : weeklyPercent > 50 ? 'warning' : 'success';
             
             const html = `
                 <div class="section">
                     <div class="section-title">⏱️ 当前周期（剩余 ${intervalRemainTime}）</div>
                     <div class="stat-row">
                         <span class="stat-label">剩余次数</span>
-                        <span class="stat-value" style="color:${intervalColor}">${intervalRemaining}</span>
+                        <span class="stat-value ${intervalColor}">${intervalRemaining}</span>
                     </div>
                     <div class="stat-row">
                         <span class="stat-label">已用次数</span>
@@ -255,11 +277,11 @@
                     </div>
                     <div class="stat-row">
                         <span class="stat-label">已用占比</span>
-                        <span class="stat-value" style="color:${intervalColor}">${intervalPercent}%</span>
+                        <span class="stat-value ${intervalColor}">${intervalPercent}%</span>
                     </div>
                     <div class="usage-bar">
                         <div class="usage-bar-fill ${intervalPercent > 80 ? 'high' : intervalPercent > 50 ? 'medium' : 'low'}" 
-                             style="width:${intervalPercent}%;background:${intervalColor}"></div>
+                             style="width:${intervalPercent}%"></div>
                     </div>
                 </div>
                 
@@ -267,7 +289,7 @@
                     <div class="section-title">📅 本周</div>
                     <div class="stat-row">
                         <span class="stat-label">剩余额度</span>
-                        <span class="stat-value" style="color:${weeklyColor}">${weeklyRemaining}</span>
+                        <span class="stat-value ${weeklyColor}">${weeklyRemaining}</span>
                     </div>
                     <div class="stat-row">
                         <span class="stat-label">已用额度</span>
@@ -279,11 +301,11 @@
                     </div>
                     <div class="stat-row">
                         <span class="stat-label">已用占比</span>
-                        <span class="stat-value" style="color:${weeklyColor}">${weeklyPercent}%</span>
+                        <span class="stat-value ${weeklyColor}">${weeklyPercent}%</span>
                     </div>
                     <div class="usage-bar">
                         <div class="usage-bar-fill ${weeklyPercent > 80 ? 'high' : weeklyPercent > 50 ? 'medium' : 'low'}" 
-                             style="width:${weeklyPercent}%;background:${weeklyColor}"></div>
+                             style="width:${weeklyPercent}%"></div>
                     </div>
                 </div>
             `;
