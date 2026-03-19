@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用量监控</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #6366f1;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f8fafc;
+            --text-secondary: #94a3b8;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            background: var(--bg);
+            background-image: 
+                radial-gradient(ellipse at top, #1e1b4b 0%, transparent 50%),
+                radial-gradient(ellipse at bottom right, #312e81 0%, transparent 50%);
+            color: var(--text);
+            padding: 20px;
+        }
+        .container { max-width: 500px; margin: 0 auto; }
+        h1 { 
+            text-align: center; 
+            margin-bottom: 24px; 
+            font-size: 24px;
+            background: linear-gradient(135deg, #a78bfa, #f472b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid #334155;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .provider-badge {
+            background: linear-gradient(135deg, var(--primary), #a855f7);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #334155;
+        }
+        .stat-row:last-child { border-bottom: none; }
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .stat-value.success { color: var(--success); }
+        .stat-value.warning { color: var(--warning); }
+        .stat-value.danger { color: #ef4444; }
+        
+        .refresh-bar {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .refresh-icon {
+            font-size: 24px;
+        }
+        .refresh-info {
+            flex: 1;
+        }
+        .refresh-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .refresh-time {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .countdown {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+        .error {
+            background: #7f1d1d;
+            border-radius: 12px;
+            padding: 16px;
+            color: #f87171;
+            text-align: center;
+        }
+        .api-note {
+            text-align: center;
+            padding: 12px;
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 用量监控</h1>
+        
+        <div id="minimaxCard" class="card">
+            <div class="card-header">
+                <span class="card-title">MiniMax</span>
+                <span class="provider-badge">MiniMax</span>
+            </div>
+            <div id="minimaxContent">
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+        
+        <div class="refresh-bar">
+            <span class="refresh-icon">🔄</span>
+            <div class="refresh-info">
+                <div class="refresh-label">下次刷新</div>
+                <div class="refresh-time" id="nextRefresh">--</div>
+            </div>
+            <div class="countdown" id="countdown">60s</div>
+        </div>
+        
+        <div class="api-note">
+            API Key 自动获取自本地配置
+        </div>
+    </div>
+
+    <script>
+        const REFRESH_INTERVAL = 60; // 秒
+        
+        let remainingSeconds = REFRESH_INTERVAL;
+        let countdownTimer;
+        
+        // 从本地获取 API Key（需要后端代理或扩展支持）
+        async function fetchUsage() {
+            try {
+                // 由于浏览器 CORS 限制，需要通过后端代理
+                // 这里先显示模拟数据，实际需要后端支持
+                const response = await fetch('/api/usage');
+                const data = await response.json();
+                renderUsage(data);
+            } catch (e) {
+                // 如果 API 不可用，显示说明
+                showApiNote();
+            }
+        }
+        
+        function showApiNote() {
+            document.getElementById('minimaxContent').innerHTML = `
+                <div class="error">
+                    需要配置后端服务来获取用量数据<br><br>
+                    <small>API 请求需要后端代理，请部署后端服务</small>
+                </div>
+            `;
+        }
+        
+        function renderUsage(data) {
+            const html = `
+                <div class="stat-row">
+                    <span class="stat-label">已用 Token</span>
+                    <span class="stat-value">${formatNumber(data.used)}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">剩余额度</span>
+                    <span class="stat-value ${getQuotaClass(data.remaining, data.total)}">${formatNumber(data.remaining)}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">总额度</span>
+                    <span class="stat-value">${formatNumber(data.total)}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">使用占比</span>
+                    <span class="stat-value">${data.percent}%</span>
+                </div>
+            `;
+            document.getElementById('minimaxContent').innerHTML = html;
+        }
+        
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num?.toString() || '0';
+        }
+        
+        function getQuotaClass(remaining, total) {
+            const percent = (remaining / total) * 100;
+            if (percent < 10) return 'danger';
+            if (percent < 30) return 'warning';
+            return 'success';
+        }
+        
+        function updateCountdown() {
+            remainingSeconds--;
+            document.getElementById('countdown').textContent = remainingSeconds + 's';
+            document.getElementById('nextRefresh').textContent = new Date(Date.now() + remainingSeconds * 1000).toLocaleTimeString();
+            
+            if (remainingSeconds <= 0) {
+                remainingSeconds = REFRESH_INTERVAL;
+                fetchUsage();
+            }
+        }
+        
+        // 初始化
+        function init() {
+            fetchUsage();
+            countdownTimer = setInterval(updateCountdown, 1000);
+        }
+        
+        init();
+    </script>
+</body>
+</html>
