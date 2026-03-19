@@ -70,6 +70,30 @@
             font-weight: 600;
             color: white;
         }
+        .refresh-btn {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid var(--primary);
+            border-radius: 12px;
+            background: transparent;
+            color: var(--primary);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .refresh-btn:hover {
+            background: var(--primary);
+            color: #fff;
+        }
+        .refresh-btn.loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
         .section {
             margin-bottom: 20px;
             padding-bottom: 16px;
@@ -125,43 +149,6 @@
         .usage-bar-fill.medium { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
         .usage-bar-fill.high { background: linear-gradient(90deg, #f87171, #ef4444); }
         
-        .refresh-bar {
-            background: var(--card-bg);
-            border-radius: 16px;
-            padding: 16px 20px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            border: 1px solid var(--border);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-        }
-        .refresh-icon {
-            font-size: 20px;
-            opacity: 0.6;
-        }
-        .refresh-info {
-            flex: 1;
-        }
-        .refresh-label {
-            font-size: 11px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .refresh-time {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text);
-        }
-        .countdown {
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--primary);
-            background: rgba(16, 185, 129, 0.1);
-            padding: 8px 16px;
-            border-radius: 12px;
-        }
-        
         .loading {
             text-align: center;
             padding: 40px;
@@ -194,15 +181,11 @@
             </div>
         </div>
         
-        <!-- 下次刷新 -->
-        <div class="refresh-bar">
-            <span class="refresh-icon">🔄</span>
-            <div class="refresh-info">
-                <div class="refresh-label">下次刷新</div>
-                <div class="refresh-time" id="nextRefresh">--</div>
-            </div>
-            <div class="countdown" id="countdown">60s</div>
-        </div>
+        <!-- 手动刷新按钮 -->
+        <button class="refresh-btn" id="refreshBtn" onclick="manualRefresh()">
+            <span>🔄</span>
+            <span id="refreshText">刷新</span>
+        </button>
     </div>
 
     <script>
@@ -324,20 +307,30 @@
             return `${seconds}秒`;
         }
         
-        function updateCountdown() {
+        function manualRefresh() {
+            const btn = document.getElementById('refreshBtn');
+            const text = document.getElementById('refreshText');
+            btn.classList.add('loading');
+            text.textContent = '刷新中...';
+            fetchMiniMaxUsage();
+            // 重置倒计时
+            remainingSeconds = REFRESH_INTERVAL;
+            btn.classList.remove('loading');
+            text.textContent = '刷新';
+        }
+        
+        function autoRefreshLoop() {
             remainingSeconds--;
-            document.getElementById('countdown').textContent = remainingSeconds + 's';
-            document.getElementById('nextRefresh').textContent = new Date(Date.now() + remainingSeconds * 1000).toLocaleTimeString();
             if (remainingSeconds <= 0) {
                 remainingSeconds = REFRESH_INTERVAL;
                 fetchMiniMaxUsage();
             }
+            countdownTimer = setTimeout(autoRefreshLoop, 1000);
         }
         
         function init() {
             fetchMiniMaxUsage();
-            countdownTimer = setInterval(updateCountdown, 1000);
-            document.getElementById('nextRefresh').textContent = new Date(Date.now() + REFRESH_INTERVAL * 1000).toLocaleTimeString();
+            autoRefreshLoop();
         }
         
         init();
