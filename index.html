@@ -219,17 +219,17 @@
                 return;
             }
             
-            // 本周数据
-            const weeklyTotal = model.current_weekly_total_count || 0;
-            const weeklyRemaining = model.current_weekly_usage_count || 0; // API返回的就是剩余额度
-            const weeklyUsed = weeklyTotal - weeklyRemaining;
-            const weeklyPercent = weeklyTotal > 0 ? ((weeklyUsed / weeklyTotal) * 100).toFixed(1) : 0;
-            
             // 当前周期数据
             const intervalTotal = model.current_interval_total_count || 0;
-            const intervalUsed = model.current_interval_usage_count || 0;
-            const intervalRemains = intervalTotal - intervalUsed;
+            const intervalRemaining = model.current_interval_usage_count || 0; // API返回的是剩余次数
+            const intervalUsed = intervalTotal - intervalRemaining;
             const intervalPercent = intervalTotal > 0 ? ((intervalUsed / intervalTotal) * 100).toFixed(1) : 0;
+            
+            // 本周数据
+            const weeklyTotal = model.current_weekly_total_count || 0;
+            const weeklyRemaining = model.current_weekly_usage_count || 0; // API返回的是剩余额度
+            const weeklyUsed = weeklyTotal - weeklyRemaining;
+            const weeklyPercent = weeklyTotal > 0 ? ((weeklyUsed / weeklyTotal) * 100).toFixed(1) : 0;
             
             // 当前周期剩余时间
             const intervalRemainTime = formatTime(model.remains_time || 0);
@@ -243,7 +243,7 @@
                     <div class="section-title">⏱️ 当前周期（剩余 ${intervalRemainTime}）</div>
                     <div class="stat-row">
                         <span class="stat-label">剩余次数</span>
-                        <span class="stat-value" style="color:${intervalColor}">${intervalRemains}</span>
+                        <span class="stat-value" style="color:${intervalColor}">${intervalRemaining}</span>
                     </div>
                     <div class="stat-row">
                         <span class="stat-label">已用次数</span>
@@ -252,6 +252,10 @@
                     <div class="stat-row">
                         <span class="stat-label">总次数</span>
                         <span class="stat-value">${intervalTotal}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">已用占比</span>
+                        <span class="stat-value" style="color:${intervalColor}">${intervalPercent}%</span>
                     </div>
                     <div class="usage-bar">
                         <div class="usage-bar-fill ${intervalPercent > 80 ? 'high' : intervalPercent > 50 ? 'medium' : 'low'}" 
@@ -272,6 +276,10 @@
                     <div class="stat-row">
                         <span class="stat-label">总额度</span>
                         <span class="stat-value">${weeklyTotal}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">已用占比</span>
+                        <span class="stat-value" style="color:${weeklyColor}">${weeklyPercent}%</span>
                     </div>
                     <div class="usage-bar">
                         <div class="usage-bar-fill ${weeklyPercent > 80 ? 'high' : weeklyPercent > 50 ? 'medium' : 'low'}" 
