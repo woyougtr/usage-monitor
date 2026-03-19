@@ -166,6 +166,41 @@
             color: var(--text-secondary);
         }
         
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(16, 185, 129, 0.2);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary);
+            padding: 12px 24px;
+            border-radius: 30px;
+            color: #fff;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .toast.show {
+            opacity: 1;
+        }
+        
         .error {
             background: #fef2f2;
             border-radius: 12px;
@@ -200,7 +235,12 @@
         let allModels = [];
         let selectedModel = 'MiniMax-M2.7';
         
-        async function fetchMiniMaxUsage() {
+        async function fetchMiniMaxUsage(showLoading = false) {
+            if (showLoading) {
+                const btn = document.querySelector('.provider-badge');
+                btn.innerHTML = '<span class="loading-spinner"></span>刷新';
+            }
+            
             try {
                 const response = await fetch('/api/usage');
                 const data = await response.json();
@@ -214,10 +254,19 @@
                     selectedModel = allModels[0]?.model_name || '';
                 }
                 renderSelectedModel();
+                
+                if (showLoading) {
+                    showToast('刷新成功');
+                    document.querySelector('.provider-badge').innerHTML = '🔄 刷新';
+                }
             } catch (e) {
                 document.getElementById('minimaxContent').innerHTML = `
                     <div class="error">获取失败: ${e.message}</div>
                 `;
+                if (showLoading) {
+                    showToast('刷新失败');
+                    document.querySelector('.provider-badge').innerHTML = '🔄 刷新';
+                }
             }
         }
         
@@ -313,8 +362,7 @@
         }
         
         function manualRefresh() {
-            fetchMiniMaxUsage();
-            // 重置倒计时
+            fetchMiniMaxUsage(true);
             remainingSeconds = REFRESH_INTERVAL;
         }
         
@@ -333,6 +381,13 @@
         }
         
         init();
+        
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
     </script>
 </body>
 </html>
