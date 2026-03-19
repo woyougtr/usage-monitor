@@ -157,6 +157,31 @@
             color: var(--text-secondary);
             font-size: 12px;
         }
+        
+        .model-selector {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .model-btn {
+            padding: 4px 12px;
+            border-radius: 16px;
+            border: 1px solid #334155;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .model-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        .model-btn:hover {
+            border-color: var(--primary);
+        }
     </style>
 </head>
 <body>
@@ -169,6 +194,9 @@
                 <span class="card-title">🤖 MiniMax</span>
                 <span class="provider-badge badge-minimax">MiniMax</span>
             </div>
+            
+            <div class="model-selector" id="modelSelector"></div>
+            
             <div id="minimaxContent">
                 <div class="loading">加载中...</div>
             </div>
@@ -193,6 +221,8 @@
         const REFRESH_INTERVAL = 60;
         let remainingSeconds = REFRESH_INTERVAL;
         let countdownTimer;
+        let allModels = [];
+        let selectedModel = 'MiniMax-M2.7';
         
         // 从 Vercel API 获取 MiniMax 用量
         async function fetchMiniMaxUsage() {
@@ -200,14 +230,77 @@
                 const response = await fetch('/api/usage');
                 const data = await response.json();
                 
-                if (data.error) {
-                    throw new Error(data.error);
+                if (data.base_resp?.status_msg !== 'success') {
+                    throw new Error(data.base_resp?.status_msg || 'API Error');
                 }
                 
-                renderMiniMaxUsage(data);
+                allModels = data.model_remains || [];
+                renderModelSelector();
+                renderSelectedModel();
             } catch (e) {
                 renderError(e.message);
             }
+        }
+        
+        function renderModelSelector() {
+            const container = document.getElementById('modelSelector');
+            container.innerHTML = allModels.map(m => `
+                <button class="model-btn ${m.model_name === selectedModel ? 'active' : ''}" 
+                        onclick="selectModel('${m.model_name}')">
+                    ${m.model_name}
+                </button>
+            `).join('');
+        }
+        
+        function selectModel(modelName) {
+            selectedModel = modelName;
+            renderModelSelector();
+            renderSelectedModel();
+        }
+        
+        function renderSelectedModel() {
+            const model = allModels.find(m => m.model_name === selectedModel);
+            if (!model) {
+                document.getElementById('minimaxContent').innerHTML = '<div class="loading">选择模型...</div>';
+                return;
+            }
+            
+            const total = model.current_weekly_total_count || 0;
+            const used = model.current_weekly_usage_count || 0;
+            const remains = total - used;
+            const percent = total > 0 ? ((used / total) * 100).toFixed(1) : 0;
+            const percentClass = percent > 80 ? 'high' : percent > 50 ? 'medium' : 'low';
+            const percentColor = percent > 80 ? 'var(--danger)' : percent > 50 ? 'var(--warning)' : 'var(--success)';
+            
+            // 转换剩余时间为可读格式
+            const remainsTime = formatTime(model.weekly_remains_time || 0);
+            
+            const html = `
+                <div class="stat-row">
+                    <span class="stat-label">本周已用</span>
+                    <span class="stat-value">${formatNumber(used)}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">本周剩余</span>
+                    <span class="stat-value ${percentClass === 'high' ? 'danger' : percentClass === 'medium' ? 'warning' : 'success'}">${formatNumber(remains)}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">本周总额</span>
+                    <span class="stat-value">${formatNumber(total)}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">使用占比</span>
+                    <span class="stat-value" style="color:${percentColor}">${percent}%</span>
+                </div>
+                <div class="usage-bar">
+                    <div class="usage-bar-fill ${percentClass}" style="width:${percent}%;background:${percentColor}"></div>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">剩余时间</span>
+                    <span class="stat-value">${remainsTime}</span>
+                </div>
+            `;
+            document.getElementById('minimaxContent').innerHTML = html;
         }
         
         function renderError(msg) {
@@ -218,45 +311,26 @@
             `;
         }
         
-        function renderMiniMaxUsage(data) {
-            // 根据实际 API 返回格式调整
-            const remains = data.data?.remains || data.remains || 0;
-            const total = data.data?.total || data.total || 0;
-            const used = data.data?.used || data.used || 0;
-            const percent = total > 0 ? ((used / total) * 100).toFixed(1) : 0;
-            const percentClass = percent > 80 ? 'high' : percent > 50 ? 'medium' : 'low';
-            const percentColor = percent > 80 ? 'var(--danger)' : percent > 50 ? 'var(--warning)' : 'var(--success)';
-            
-            const html = `
-                <div class="stat-row">
-                    <span class="stat-label">剩余额度</span>
-                    <span class="stat-value ${percentClass === 'high' ? 'danger' : percentClass === 'medium' ? 'warning' : 'success'}">${formatNumber(remains)}</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">已用</span>
-                    <span class="stat-value">${formatNumber(used)}</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">总额度</span>
-                    <span class="stat-value">${formatNumber(total)}</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">使用占比</span>
-                    <span class="stat-value" style="color:${percentColor}">${percent}%</span>
-                </div>
-                <div class="usage-bar">
-                    <div class="usage-bar-fill ${percentClass}" style="width:${percent}%;background:${percentColor}"></div>
-                </div>
-            `;
-            document.getElementById('minimaxContent').innerHTML = html;
-        }
-        
         function formatNumber(num) {
             if (!num && num !== 0) return '0';
             num = parseFloat(num);
             if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
             if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
             return num.toString();
+        }
+        
+        function formatTime(ms) {
+            if (!ms || ms <= 0) return '已用完';
+            
+            const seconds = Math.floor(ms / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+            
+            if (days > 0) return `${days}天${hours % 24}小时`;
+            if (hours > 0) return `${hours}小时${minutes % 60}分`;
+            if (minutes > 0) return `${minutes}分${seconds % 60}秒`;
+            return `${seconds}秒`;
         }
         
         function updateCountdown() {
