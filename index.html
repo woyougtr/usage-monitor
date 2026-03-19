@@ -240,42 +240,42 @@
             
             const html = `
                 <div class="section">
-                    <div class="section-title">📅 本周</div>
-                    <div class="stat-row">
-                        <span class="stat-label">剩余额度</span>
-                        <span class="stat-value" style="color:${weeklyColor}">${weeklyRemains}</span>
-                    </div>
-                    <div class="stat-row">
-                        <span class="stat-label">总额度</span>
-                        <span class="stat-value">${weeklyTotal}</span>
-                    </div>
-                    <div class="stat-row">
-                        <span class="stat-label">已用占比</span>
-                        <span class="stat-value" style="color:${weeklyColor}">${weeklyPercent}%</span>
-                    </div>
-                    <div class="usage-bar">
-                        <div class="usage-bar-fill ${weeklyPercent > 80 ? 'high' : weeklyPercent > 50 ? 'medium' : 'low'}" 
-                             style="width:${weeklyPercent}%;background:${weeklyColor}"></div>
-                    </div>
-                </div>
-                
-                <div class="section">
                     <div class="section-title">⏱️ 当前周期（剩余 ${intervalRemainTime}）</div>
                     <div class="stat-row">
                         <span class="stat-label">剩余次数</span>
                         <span class="stat-value" style="color:${intervalColor}">${intervalRemains}</span>
                     </div>
                     <div class="stat-row">
-                        <span class="stat-label">总次数</span>
-                        <span class="stat-value">${intervalTotal}</span>
+                        <span class="stat-label">已用次数</span>
+                        <span class="stat-value">${intervalUsed}</span>
                     </div>
                     <div class="stat-row">
-                        <span class="stat-label">已用占比</span>
-                        <span class="stat-value" style="color:${intervalColor}">${intervalPercent}%</span>
+                        <span class="stat-label">总次数</span>
+                        <span class="stat-value">${intervalTotal}</span>
                     </div>
                     <div class="usage-bar">
                         <div class="usage-bar-fill ${intervalPercent > 80 ? 'high' : intervalPercent > 50 ? 'medium' : 'low'}" 
                              style="width:${intervalPercent}%;background:${intervalColor}"></div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">📅 本周</div>
+                    <div class="stat-row">
+                        <span class="stat-label">剩余额度</span>
+                        <span class="stat-value" style="color:${weeklyColor}">${weeklyRemaining}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">已用额度</span>
+                        <span class="stat-value">${weeklyUsed}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">总额度</span>
+                        <span class="stat-value">${weeklyTotal}</span>
+                    </div>
+                    <div class="usage-bar">
+                        <div class="usage-bar-fill ${weeklyPercent > 80 ? 'high' : weeklyPercent > 50 ? 'medium' : 'low'}" 
+                             style="width:${weeklyPercent}%;background:${weeklyColor}"></div>
                     </div>
                 </div>
             `;
