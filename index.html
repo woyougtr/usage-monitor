@@ -61,6 +61,9 @@
             font-size: 12px;
             font-weight: 600;
         }
+        .badge-minimax {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+        }
         .stat-row {
             display: flex;
             justify-content: space-between;
@@ -139,19 +142,34 @@
         .usage-bar-fill.low { background: var(--success); }
         .usage-bar-fill.medium { background: var(--warning); }
         .usage-bar-fill.high { background: var(--danger); }
+        
+        .error {
+            background: #7f1d1d;
+            border-radius: 12px;
+            padding: 16px;
+            color: #f87171;
+            text-align: center;
+        }
+        
+        .config-note {
+            text-align: center;
+            padding: 12px;
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>📊 用量监控</h1>
         
-        <!-- OpenClaw 当前会话 -->
+        <!-- MiniMax 用量 -->
         <div class="card">
             <div class="card-header">
-                <span class="card-title">🤖 OpenClaw 当前会话</span>
-                <span class="provider-badge">OpenClaw</span>
+                <span class="card-title">🤖 MiniMax</span>
+                <span class="provider-badge badge-minimax">MiniMax</span>
             </div>
-            <div id="openclawContent">
+            <div id="minimaxContent">
                 <div class="loading">加载中...</div>
             </div>
         </div>
@@ -160,15 +178,14 @@
         <div class="refresh-bar">
             <span class="refresh-icon">🔄</span>
             <div class="refresh-info">
-                <div class="refresh-label">数据更新时间</div>
-                <div class="refresh-time" id="updateTime">--</div>
+                <div class="refresh-label">下次刷新</div>
+                <div class="refresh-time" id="nextRefresh">--</div>
             </div>
             <div class="countdown" id="countdown">60s</div>
         </div>
         
-        <div style="text-align:center;padding:16px;color:var(--text-secondary);font-size:12px">
-            数据来自当前 OpenClaw 会话<br>
-            刷新页面获取最新数据
+        <div class="config-note">
+            API Key 已加密存储在 Vercel 环境变量
         </div>
     </div>
 
@@ -177,72 +194,66 @@
         let remainingSeconds = REFRESH_INTERVAL;
         let countdownTimer;
         
-        // 获取当前会话用量
-        async function fetchOpenClawUsage() {
-            // 通过 API 获取 session 状态
+        // 从 Vercel API 获取 MiniMax 用量
+        async function fetchMiniMaxUsage() {
             try {
-                // 尝试从 localStorage 获取（如果页面嵌入在 OpenClaw 中）
-                const stored = localStorage.getItem('openclaw_usage');
-                if (stored) {
-                    const data = JSON.parse(stored);
-                    renderOpenClawUsage(data);
-                } else {
-                    renderManualRefresh();
+                const response = await fetch('/api/usage');
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
                 }
+                
+                renderMiniMaxUsage(data);
             } catch (e) {
-                renderManualRefresh();
+                renderError(e.message);
             }
         }
         
-        function renderManualRefresh() {
-            document.getElementById('openclawContent').innerHTML = `
-                <div style="text-align:center;padding:20px;color:var(--text-secondary)">
-                    <p style="margin-bottom:12px">请在 OpenClaw 中发送"状态"获取数据</p>
-                    <p style="font-size:12px">或刷新页面更新</p>
+        function renderError(msg) {
+            document.getElementById('minimaxContent').innerHTML = `
+                <div class="error">
+                    获取失败: ${msg}
                 </div>
             `;
         }
         
-        function renderOpenClawUsage(data) {
-            const contextPercent = data.contextPercent || 0;
-            const contextClass = contextPercent > 80 ? 'high' : contextPercent > 50 ? 'medium' : 'low';
-            const contextClassColor = contextPercent > 80 ? 'var(--danger)' : contextPercent > 50 ? 'var(--warning)' : 'var(--success)';
+        function renderMiniMaxUsage(data) {
+            // 根据实际 API 返回格式调整
+            const remains = data.data?.remains || data.remains || 0;
+            const total = data.data?.total || data.total || 0;
+            const used = data.data?.used || data.used || 0;
+            const percent = total > 0 ? ((used / total) * 100).toFixed(1) : 0;
+            const percentClass = percent > 80 ? 'high' : percent > 50 ? 'medium' : 'low';
+            const percentColor = percent > 80 ? 'var(--danger)' : percent > 50 ? 'var(--warning)' : 'var(--success)';
             
             const html = `
                 <div class="stat-row">
-                    <span class="stat-label">模型</span>
-                    <span class="stat-value" style="font-size:14px">${data.model || 'MiniMax-M2.7'}</span>
+                    <span class="stat-label">剩余额度</span>
+                    <span class="stat-value ${percentClass === 'high' ? 'danger' : percentClass === 'medium' ? 'warning' : 'success'}">${formatNumber(remains)}</span>
                 </div>
                 <div class="stat-row">
-                    <span class="stat-label">输入 Token</span>
-                    <span class="stat-value">${formatNumber(data.inputTokens)}</span>
+                    <span class="stat-label">已用</span>
+                    <span class="stat-value">${formatNumber(used)}</span>
                 </div>
                 <div class="stat-row">
-                    <span class="stat-label">输出 Token</span>
-                    <span class="stat-value">${formatNumber(data.outputTokens)}</span>
+                    <span class="stat-label">总额度</span>
+                    <span class="stat-value">${formatNumber(total)}</span>
                 </div>
                 <div class="stat-row">
-                    <span class="stat-label">上下文使用</span>
-                    <span class="stat-value" style="color:${contextClassColor}">${contextPercent}%</span>
+                    <span class="stat-label">使用占比</span>
+                    <span class="stat-value" style="color:${percentColor}">${percent}%</span>
                 </div>
                 <div class="usage-bar">
-                    <div class="usage-bar-fill ${contextClass}" style="width:${contextPercent}%;background:${contextClassColor}"></div>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">缓存命中率</span>
-                    <span class="stat-value">${data.cacheHit || '0%'}</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">会话时长</span>
-                    <span class="stat-value">${data.sessionAge || '--'}</span>
+                    <div class="usage-bar-fill ${percentClass}" style="width:${percent}%;background:${percentColor}"></div>
                 </div>
             `;
-            document.getElementById('openclawContent').innerHTML = html;
+            document.getElementById('minimaxContent').innerHTML = html;
         }
         
         function formatNumber(num) {
-            if (!num) return '0';
-            num = parseInt(num);
+            if (!num && num !== 0) return '0';
+            num = parseFloat(num);
             if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
             if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
             return num.toString();
@@ -251,19 +262,19 @@
         function updateCountdown() {
             remainingSeconds--;
             document.getElementById('countdown').textContent = remainingSeconds + 's';
-            document.getElementById('updateTime').textContent = new Date().toLocaleTimeString();
+            document.getElementById('nextRefresh').textContent = new Date(Date.now() + remainingSeconds * 1000).toLocaleTimeString();
             
             if (remainingSeconds <= 0) {
                 remainingSeconds = REFRESH_INTERVAL;
-                location.reload();
+                fetchMiniMaxUsage();
             }
         }
         
         // 初始化
         function init() {
-            fetchOpenClawUsage();
+            fetchMiniMaxUsage();
             countdownTimer = setInterval(updateCountdown, 1000);
-            document.getElementById('updateTime').textContent = new Date().toLocaleTimeString();
+            document.getElementById('nextRefresh').textContent = new Date(Date.now() + REFRESH_INTERVAL * 1000).toLocaleTimeString();
         }
         
         init();
