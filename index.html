@@ -221,8 +221,8 @@
             
             // 本周数据
             const weeklyTotal = model.current_weekly_total_count || 0;
-            const weeklyUsed = model.current_weekly_usage_count || 0;
-            const weeklyRemains = weeklyTotal - weeklyUsed;
+            const weeklyRemaining = model.current_weekly_usage_count || 0; // API返回的就是剩余额度
+            const weeklyUsed = weeklyTotal - weeklyRemaining;
             const weeklyPercent = weeklyTotal > 0 ? ((weeklyUsed / weeklyTotal) * 100).toFixed(1) : 0;
             
             // 当前周期数据
