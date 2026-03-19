@@ -63,29 +63,19 @@
             color: var(--text);
         }
         .provider-badge {
-            background: transparent;
-            padding: 0;
-            border-radius: 0;
-            font-size: 0;
-        }
-        .provider-badge button {
             background: linear-gradient(135deg, #10b981, #059669);
-            border: none;
-            padding: 8px 12px;
+            padding: 4px 12px;
             border-radius: 20px;
-            font-size: 13px;
+            font-size: 11px;
             font-weight: 600;
             color: white;
             cursor: pointer;
             transition: all 0.2s;
             box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
         }
-        .provider-badge button:hover {
+        .provider-badge:hover {
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-        }
-        .provider-badge button:active {
-            transform: translateY(0);
         }
         .refresh-btn {
             width: 100%;
@@ -193,10 +183,8 @@
         <!-- MiniMax 用量 -->
         <div class="card">
             <div class="card-header">
-                <span class="card-title">🤖 MiniMax</span>
-                <span class="provider-badge">
-                    <button onclick="manualRefresh()" title="刷新">🔄</button>
-                </span>
+                <span class="card-title">🤖</span>
+                <span class="provider-badge" onclick="manualRefresh()">刷新</span>
             </div>
             
             <div id="minimaxContent">
