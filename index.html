@@ -183,9 +183,9 @@
         
         .toast {
             position: fixed;
-            top: 20px;
+            top: 50%;
             left: 50%;
-            transform: translateX(-50%);
+            transform: translate(-50%, -50%);
             background: var(--primary);
             padding: 12px 24px;
             border-radius: 30px;
@@ -260,7 +260,7 @@
                 
                 if (showLoading) {
                     showToast('刷新成功');
-                    document.querySelector('.provider-badge').innerHTML = '🔄 刷新';
+                    document.querySelector('.provider-badge').innerHTML = '刷新';
                 }
             } catch (e) {
                 const msg = e.name === 'AbortError' ? '请求超时，请检查网络' : e.message;
@@ -269,7 +269,7 @@
                 `;
                 if (showLoading) {
                     showToast('刷新失败');
-                    document.querySelector('.provider-badge').innerHTML = '🔄 刷新';
+                    document.querySelector('.provider-badge').innerHTML = '刷新';
                 }
             }
         }
