@@ -242,7 +242,10 @@
             }
             
             try {
-                const response = await fetch('/api/usage');
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 10000);
+                const response = await fetch('/api/usage', { signal: controller.signal });
+                clearTimeout(timeout);
                 const data = await response.json();
                 
                 if (data.base_resp?.status_msg !== 'success') {
@@ -260,8 +263,9 @@
                     document.querySelector('.provider-badge').innerHTML = '🔄 刷新';
                 }
             } catch (e) {
+                const msg = e.name === 'AbortError' ? '请求超时，请检查网络' : e.message;
                 document.getElementById('minimaxContent').innerHTML = `
-                    <div class="error">获取失败: ${e.message}</div>
+                    <div class="error">获取失败: ${msg}</div>
                 `;
                 if (showLoading) {
                     showToast('刷新失败');
