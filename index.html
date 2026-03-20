@@ -259,7 +259,10 @@
                 renderSelectedModel();
                 
                 if (showLoading) {
-                    document.querySelector('.provider-badge').innerHTML = '刷新';
+                    document.querySelector('.provider-badge').innerHTML = '刷新成功';
+                    setTimeout(() => {
+                        document.querySelector('.provider-badge').innerHTML = '刷新';
+                    }, 1500);
                 }
             } catch (e) {
                 const msg = e.name === 'AbortError' ? '请求超时，请检查网络' : e.message;
@@ -267,8 +270,10 @@
                     <div class="error">获取失败: ${msg}</div>
                 `;
                 if (showLoading) {
-                    showToast('刷新失败');
-                    document.querySelector('.provider-badge').innerHTML = '刷新';
+                    document.querySelector('.provider-badge').innerHTML = '刷新失败';
+                    setTimeout(() => {
+                        document.querySelector('.provider-badge').innerHTML = '刷新';
+                    }, 1500);
                 }
             }
         }
