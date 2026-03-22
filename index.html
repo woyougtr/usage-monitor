@@ -219,7 +219,10 @@
         <div class="card">
             <div class="card-header">
                 <span class="card-title">🤖 MiniMax</span>
-                <span class="provider-badge" onclick="manualRefresh()">刷新</span>
+                <div>
+                    <span class="provider-badge" onclick="showDebug()" style="margin-right:8px;background:#6b7280;">调试</span>
+                    <span class="provider-badge" onclick="manualRefresh()">刷新</span>
+                </div>
             </div>
             
             <div id="minimaxContent">
@@ -386,6 +389,17 @@
         function init() {
             fetchMiniMaxUsage();
             autoRefreshLoop();
+        }
+        
+        // 调试：点击显示 API 原始返回
+        async function showDebug() {
+            try {
+                const response = await fetch('/api/usage');
+                const data = await response.json();
+                alert(JSON.stringify(data, null, 2));
+            } catch (e) {
+                alert('获取失败: ' + e.message);
+            }
         }
         
         init();
